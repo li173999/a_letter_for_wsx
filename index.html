@@ -1,0 +1,444 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>给你的一封信</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500&display=swap');
+
+        :root {
+            --deep-space: #0a0821;
+            --starlight: rgba(255, 255, 255, 0.9);
+            --nebula-purple: rgba(128, 85, 230, 0.15);
+            --cosmic-glow: rgba(188, 170, 255, 0.08);
+            --star-accent: #b0a0ff;
+            --form-bg: rgba(10, 8, 33, 0.75);
+            --form-border: rgba(138, 130, 255, 0.2);
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Serif SC', 'Microsoft YaHei', serif;
+            color: var(--starlight);
+            background-color: var(--deep-space);
+        }
+
+        body {
+            background-image: url('');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            position: relative;
+        }
+
+            body::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(180deg, rgba(10,8,33,0.3), rgba(10,8,33,0.6));
+                z-index: 0;
+                pointer-events: none;
+            }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        .password-form {
+            background-color: var(--form-bg);
+            border: 1px solid var(--form-border);
+            padding: 35px 40px;
+            border-radius: 18px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 120px var(--nebula-purple);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+            transform: translateY(0);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        h1 {
+            color: var(--starlight);
+            margin-bottom: 20px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(176, 160, 255, 0.4);
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 25px;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 15px 0;
+            background-color: rgba(30, 20, 60, 0.4);
+            border: 1px solid rgba(138, 130, 255, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            color: white;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+            input[type="password"]:focus {
+                outline: none;
+                border-color: var(--star-accent);
+                box-shadow: 0 0 15px rgba(176, 160, 255, 0.3);
+            }
+
+            input[type="password"]::placeholder {
+                color: rgba(255, 255, 255, 0.5);
+            }
+
+        button {
+            background: linear-gradient(135deg, #8a55e6, #5543b8);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: 'Noto Serif SC', serif;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(85, 67, 184, 0.4);
+        }
+
+            button:hover {
+                background: linear-gradient(135deg, #9965f4, #6453c5);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(85, 67, 184, 0.5);
+            }
+
+        .error-message {
+            color: #ff9a9a;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+            opacity: 0;
+            transform: translateY(-5px);
+            animation: fadeInUp 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .music-control {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 50px;
+            height: 50px;
+            background-color: var(--cosmic-glow);
+            border: 1px solid var(--form-border);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 22px;
+            box-shadow: 0 0 20px var(--nebula-purple);
+            transition: all 0.5s ease;
+            z-index: 100;
+        }
+
+            .music-control:hover {
+                background-color: rgba(128, 85, 230, 0.2);
+                transform: scale(1.05);
+                box-shadow: 0 0 25px rgba(176, 160, 255, 0.5);
+            }
+
+        /* 通用白色遮罩样式（开场和跳转复用） */
+        .white-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: white;
+            opacity: 1;
+            z-index: 9999;
+            pointer-events: all;
+            transition: opacity 3s cubic-bezier(0.19, 1, 0.22, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        /* 仅开场用的内容样式 */
+        .intro-icon {
+            font-size: 72px;
+            line-height: 1;
+            margin-bottom: 14px;
+            opacity: 0;
+            animation: introFadeIn 1.2s ease forwards 0.2s;
+        }
+
+        .intro-text {
+            font-size: 14px;
+            color: #333;
+            opacity: 0;
+            animation: introFadeIn 1s ease forwards 0.6s;
+            letter-spacing: 1px;
+        }
+
+        @keyframes introFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .star {
+            position: fixed;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        @keyframes twinkle {
+            0%,100% {
+                opacity: .4
+            }
+
+            50% {
+                opacity: 1
+            }
+        }
+
+        .fade-in-element {
+            animation: fadeInDown 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .password-form {
+                width: 85%;
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 开场提示遮罩：只用于进入首页时 -->
+    <div id="introOverlay" class="white-overlay">
+        <div class="intro-icon">🎧</div>
+        <div class="intro-text">请佩戴耳机，配合音乐食用</div>
+    </div>
+
+    <!-- 纯白遮罩：仅用于密码正确后的淡白过渡 -->
+    <div id="whiteOverlay" class="white-overlay" style="display:none; opacity:0; pointer-events:none;"></div>
+
+    <audio id="bgMusic" loop preload="auto">您的浏览器不支持音频元素</audio>
+
+    <div id="musicControl" class="music-control" title="音乐控制">
+        <span id="musicIcon">▶️</span>
+    </div>
+
+    <div class="container">
+        <div id="passwordForm" class="password-form fade-in-element">
+            <h1>宇宙之信</h1>
+            <p>请输入密码揭开这封来自星辰的信件</p>
+            <input type="password" id="passwordInput" placeholder="请输入密码" autocomplete="off">
+            <p id="errorMessage" class="error-message">密码错误，请重新输入</p>
+            <button onclick="checkPassword()">解锁信件</button>
+        </div>
+    </div>
+
+    <script>
+        let currentMusicPath = '';
+        let currentBackground = '';
+
+        window.onload = function () {
+            console.log("页面加载完成，开始初始化...");
+            createStars(100);
+
+            const backgrounds = ['assets/images/bg1.jpg', 'assets/images/bg2.jpg'];
+            currentBackground = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+            document.body.style.backgroundImage = `url('${currentBackground}')`;
+
+            const testImg = new Image();
+            testImg.onerror = function () { document.body.style.backgroundColor = "#0a0821"; };
+            testImg.src = currentBackground;
+
+            sessionStorage.setItem('currentBackground', currentBackground);
+
+            const musicFiles = ['assets/audio/music1.mp3', 'assets/audio/music2.mp3'];
+            currentMusicPath = musicFiles[Math.floor(Math.random() * musicFiles.length)];
+
+            const music = document.getElementById('bgMusic');
+            while (music.firstChild) music.removeChild(music.firstChild);
+            const source = document.createElement('source');
+            source.src = currentMusicPath; source.type = 'audio/mpeg';
+            music.appendChild(source);
+            music.load();
+
+            setupMusic();
+            sessionStorage.setItem('currentMusic', currentMusicPath);
+
+            startIntroOverlay(); // 开场提示仅此一次
+        };
+
+        // 开场提示只在进入首页时显示
+        function startIntroOverlay() {
+            const intro = document.getElementById('introOverlay');
+            intro.style.opacity = '1';
+            intro.style.pointerEvents = 'all';
+
+            setTimeout(() => {
+                intro.style.opacity = '0';
+                intro.style.pointerEvents = 'none';
+                setTimeout(() => { intro.style.display = 'none'; }, 3000);
+            }, 4000);
+        }
+
+        function createStars(count) {
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                const x = Math.random() * 100, y = Math.random() * 100;
+                const size = Math.random() < 0.9 ? Math.random() * 2 + 1 : Math.random() * 3 + 2;
+                const delay = Math.random() * 3, brightness = 0.7 + Math.random() * 0.3;
+                star.style.left = `${x}vw`; star.style.top = `${y}vh`;
+                star.style.width = `${size}px`; star.style.height = `${size}px`;
+                star.style.animationDelay = `${delay}s`; star.style.opacity = brightness;
+                document.body.appendChild(star);
+            }
+        }
+
+        function setupMusic() {
+            const music = document.getElementById('bgMusic');
+            const musicControl = document.getElementById('musicControl');
+            const musicIcon = document.getElementById('musicIcon');
+
+            music.addEventListener('canplaythrough', function () { console.log('音乐已加载，可以播放'); });
+            music.onerror = function () { musicIcon.textContent = '❌'; };
+
+            musicControl.addEventListener('click', function () {
+                if (music.paused) {
+                    music.play().then(() => { musicIcon.textContent = '🔊'; }).catch(console.error);
+                } else {
+                    music.pause(); musicIcon.textContent = '▶️';
+                }
+            });
+
+            document.addEventListener('click', function playOnFirstInteraction() {
+                music.play().then(() => { musicIcon.textContent = '🔊'; }).catch(() => { });
+                document.removeEventListener('click', playOnFirstInteraction);
+            });
+        }
+
+        // 跳转淡白时仅显示纯白，不带耳机提示
+        function fadeToWhite(duration, callback) {
+            const overlay = document.getElementById('whiteOverlay');
+            overlay.style.display = 'flex';
+            overlay.style.pointerEvents = 'all';
+            overlay.style.opacity = 0;
+            overlay.style.transition = `opacity ${duration / 1000}s cubic-bezier(0.19, 1, 0.22, 1)`;
+            void overlay.offsetWidth;
+            overlay.style.opacity = 1;
+            setTimeout(callback, duration);
+        }
+
+        function fadeOutMusic(duration, callback) {
+            const music = document.getElementById('bgMusic');
+            if (music.paused) { callback(); return; }
+            const originalVolume = music.volume || 1.0;
+            let volume = originalVolume;
+            const steps = 30, volumeStep = originalVolume / steps, intervalTime = duration / steps;
+            const fadeInterval = setInterval(function () {
+                volume -= volumeStep;
+                if (volume <= 0) {
+                    clearInterval(fadeInterval);
+                    music.pause();
+                    music.volume = originalVolume;
+                    callback(); return;
+                }
+                music.volume = Math.max(0, volume);
+            }, intervalTime);
+        }
+
+        function performTransition() {
+            const form = document.getElementById('passwordForm');
+            form.style.opacity = 0; form.style.transform = 'translateY(20px)';
+            document.getElementById('musicControl').style.opacity = 0;
+
+            const transitionDuration = 3000;
+            const musicFadePromise = new Promise(resolve => fadeOutMusic(transitionDuration, resolve));
+            const pageFadePromise = new Promise(resolve => fadeToWhite(transitionDuration, resolve));
+
+            Promise.all([musicFadePromise, pageFadePromise]).then(() => {
+                window.location.href = "letter.html";
+            });
+        }
+
+        function showError() {
+            const errorMsg = document.getElementById("errorMessage");
+            errorMsg.style.display = "block";
+            errorMsg.style.animation = 'none';
+            void errorMsg.offsetWidth;
+            errorMsg.style.animation = 'fadeInUp 0.5s forwards';
+            setTimeout(() => {
+                errorMsg.style.opacity = 0;
+                setTimeout(() => { errorMsg.style.display = "none"; }, 500);
+            }, 3000);
+        }
+
+        function checkPassword() {
+            const correctPassword = "20060813";
+            const passwordInput = document.getElementById("passwordInput").value;
+            if (passwordInput === correctPassword) {
+                performTransition();
+            } else {
+                showError();
+                document.getElementById("passwordInput").value = "";
+            }
+        }
+
+        document.getElementById("passwordInput").addEventListener("keyup", function (event) {
+            if (event.key === "Enter") checkPassword();
+        });
+    </script>
+</body>
+</html>
