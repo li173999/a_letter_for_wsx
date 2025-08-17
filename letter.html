@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>给你的信</title>
+    <title>王舒歆 亲启</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500&display=swap');
 
@@ -13,8 +13,8 @@
             --nebula-purple: rgba(128, 85, 230, 0.15);
             --cosmic-glow: rgba(188, 170, 255, 0.08);
             --star-accent: #b0a0ff;
-            /* 容器更透明，透出星空 */
-            --letter-bg: rgba(10, 8, 33, 0.55);
+            /* 降低容器不透明度，更透星空（0.55 -> 0.38）*/
+            --letter-bg: rgba(10, 8, 33, 0.38);
             --letter-border: rgba(138, 130, 255, 0.2);
         }
 
@@ -48,23 +48,83 @@
 
         .star {
             position: fixed;
-            background-color: white;
+            left: 0;
+            top: 0;
+            width: var(--size, 2px);
+            height: var(--size, 2px);
+            background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.9) 38%, rgba(255,255,255,0.0) 70%);
             border-radius: 50%;
-            animation: twinkle 3s infinite;
             z-index: 2;
             pointer-events: none;
+            opacity: 0.7;
+            /* 辉光更克制 */
+            filter: drop-shadow(0 0 3px rgba(255,255,255,0.38));
+            animation: twinkle var(--dur, 6s) ease-in-out infinite;
+            animation-delay: var(--delay, 0s);
+            will-change: opacity, transform;
         }
 
+            /* 只有 “会闪”的星（.spark）才渲染光束 */
+            .star.spark::before,
+            .star.spark::after {
+                content: '';
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(0.15);
+                opacity: 0;
+                border-radius: 999px;
+                /* 细长光束：中间亮、两端透明 */
+                background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,0) 100%);
+                /* 更细、更优雅的辉光 */
+                filter: drop-shadow(0 0 5px rgba(176,160,255,0.35));
+                will-change: transform, opacity;
+                animation: spikeTwinkle var(--dur, 6s) ease-in-out infinite;
+                animation-delay: var(--delay, 0s);
+            }
+
+            /* 主光束尺寸（长度随星点大小放大，厚度更细） */
+            .star.spark::before {
+                width: calc(var(--size, 2px) * 7.5 * var(--spikeScale, 1));
+                height: clamp(0.6px, calc(var(--size, 2px) * 0.42), 1.2px);
+            }
+
+            /* 次光束（仅在 .cross 下启用）；让它和主光束成近似直角但略有偏差，更自然 */
+            .star.spark.cross::after {
+                /* 让通用 keyframes 读取 --rot 变量，这里把 --rot 映射为 --rot2 */
+                --rot: var(--rot2, 90deg);
+                width: calc(var(--size, 2px) * 7.5 * var(--spikeScale, 1));
+                height: clamp(0.6px, calc(var(--size, 2px) * 0.42), 1.2px);
+            }
+
+            /* 若不是 cross，则隐藏次光束 */
+            .star.spark:not(.cross)::after {
+                display: none;
+            }
+
+        /* 光束在亮度峰值出现，其他时刻收缩隐藏 */
+        @keyframes spikeTwinkle {
+            0%, 35%, 65%, 100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(0.15);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(1);
+            }
+        }
+
+        /* 星点的亮暗（周期拉长） */
         @keyframes twinkle {
             0%, 100% {
-                opacity: 0.4;
+                opacity: 0.42;
             }
 
             50% {
                 opacity: 1;
             }
         }
-
         /* 流星容器（仅承载位移与旋转，子元素分别是星头与拖尾） */
         .meteor {
             position: fixed;
@@ -196,29 +256,86 @@
             color: var(--star-accent);
         }
 
-        /* 迷你播放器 */
+        /* 悬浮球（默认显示） */
+        .player-fab {
+            position: fixed;
+            right: 20px;
+            bottom: 22px;
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: radial-gradient(120px 120px at 35% 30%, rgba(176,160,255,0.35), rgba(176,160,255,0) 60%), linear-gradient(145deg, #1b1638, #100d2a 60%);
+            border: 1px solid rgba(176,160,255,0.28);
+            box-shadow: inset 0 0 20px rgba(176,160,255,0.12), 0 0 18px rgba(138,130,255,0.28), 0 12px 28px rgba(0,0,0,0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            cursor: pointer;
+            z-index: 120;
+            opacity: 0;
+            transform: translateY(8px) scale(0.95);
+            transition: all .5s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+            .player-fab::after {
+                content: "";
+                position: absolute;
+                inset: -6px;
+                border-radius: 50%;
+                background: radial-gradient(120px 120px at 50% 50%, rgba(176,160,255,0.15), rgba(176,160,255,0) 60%);
+                filter: blur(4px);
+                pointer-events: none;
+            }
+
+            .player-fab .fab-icon {
+                font-size: 22px;
+                filter: drop-shadow(0 0 6px rgba(176,160,255,.45));
+            }
+
+            .player-fab.show {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+        body.player-open .player-fab {
+            opacity: 0;
+            transform: scale(0.96);
+            pointer-events: none;
+        }
+
+        /* 迷你播放器（展开面板），默认隐藏，展开时显示 */
         .mini-player {
             position: fixed;
             right: 20px;
             bottom: 20px;
             width: 340px;
-            background-color: var(--cosmic-glow);
-            border: 1px solid var(--letter-border);
-            border-radius: 12px;
-            padding: 10px 12px;
-            box-shadow: 0 0 20px var(--nebula-purple);
-            z-index: 100;
+            background-color: rgba(18,16,40,0.82);
+            border: 1px solid rgba(176,160,255,0.22);
+            border-radius: 14px;
+            padding: 12px 12px 12px;
+            box-shadow: 0 0 24px rgba(138,130,255,0.35), 0 16px 40px rgba(0,0,0,0.6);
+            z-index: 130;
             opacity: 0;
-            transform: translateY(8px);
-            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            transform: translateY(12px) scale(0.98);
+            transition: all 0.45s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none;
         }
 
-            .mini-player.show {
-                opacity: 1;
-                transform: translateY(0);
+            .mini-player.show { /* 初始可见性就绪 */
             }
 
+        body.player-open .mini-player {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
         .player-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
             font-size: 14px;
             color: var(--starlight);
             white-space: nowrap;
@@ -226,12 +343,27 @@
             text-overflow: ellipsis;
         }
 
+            .player-title .close-btn {
+                background: transparent;
+                border: none;
+                color: rgba(255,255,255,0.85);
+                font-size: 18px;
+                cursor: pointer;
+                padding: 2px 6px;
+                line-height: 1;
+                border-radius: 6px;
+            }
+
+                .player-title .close-btn:hover {
+                    background: rgba(176,160,255,0.12);
+                }
+
         .player-controls {
             display: flex;
             gap: 8px;
             justify-content: center;
             align-items: center;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
             .player-controls button {
@@ -257,7 +389,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
             .player-progress input[type="range"] {
@@ -284,6 +416,23 @@
             color: rgba(255,255,255,0.85);
             min-width: 90px;
             text-align: right;
+        }
+
+        /* 展开时的半透明遮罩 */
+        .player-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(1px);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+
+        body.player-open .player-backdrop {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         ::-webkit-scrollbar {
@@ -333,6 +482,13 @@
                 font-size: 16px;
             }
 
+            .player-fab {
+                right: 12px;
+                bottom: 14px;
+                width: 56px;
+                height: 56px;
+            }
+
             .mini-player {
                 right: 12px;
                 left: 12px;
@@ -362,13 +518,21 @@
 
     <div id="debugInfo" class="debug-info"></div>
 
-    <!-- 去掉 loop，使用 ended 顺序播放 -->
+    <!-- 音频 -->
     <audio id="bgMusic" preload="auto">您的浏览器不支持音频元素</audio>
 
-    <!-- 迷你播放器 -->
+    <!-- 悬浮球 -->
+    <div id="playerFab" class="player-fab" title="音乐播放器">
+        <span class="fab-icon">♫</span>
+    </div>
+    <!-- 展开遮罩 -->
+    <div id="playerBackdrop" class="player-backdrop"></div>
+
+    <!-- 迷你播放器（展开面板） -->
     <div id="miniPlayer" class="mini-player" title="音乐播放器">
         <div class="player-title">
             <span id="trackTitle">-</span>
+            <button id="btnClose" class="close-btn" aria-label="关闭">×</button>
         </div>
         <div class="player-controls">
             <button id="btnPrev" type="button">上一曲</button>
@@ -388,46 +552,50 @@
                 <p>我依旧清晰地记得初次产生交集的场景。</p>
                 <p>那次换座位，我又被排到最后一个，只剩下你前面和讲台上两个选择，于我而言，在小学期间已经坐够讲台了，所以我就挑了你前面的那个位置。</p>
                 <p>说实话，其实当时我并不太清楚你是谁，甚至到了你前面才把你的脸和你的名字联系起来。你学习挺好——尽管你自己不这么说，但在我眼里，你的成绩已经是我梦寐以求的了。而且你的性格也很好，和我一样带着一点天然呆和幼稚，还是一个乐天派，显得跟他们有些不一样。</p>
-                <p>我记得你是音乐课代表，唱歌好听，画画也厉害，还会写书法。当时的我还是太年轻了，跟你在一块只有羡慕没有自卑，觉得“哇这个人好厉害怎么什么都会。”还记得在初一一开学的那次运动会上我们坐在一起，好像聊了很多事。师达的运动会又臭又长，但后面再也没有哪个学校比它更重视体育。你当时去参加项目时，我还记得你的背影，看着你能轻松做我当时最害怕的事，还是很佩服你的。</p>
-                <p>如你所见，我的体育在当时很糟糕，跑一圈之后就累得不行了，在别人成绩飞速进步的时候我却还在七分左右徘徊；当别人能拉起四五个引体的时候我连杆子都挂不住……</p>
-                <p>当然，体育是一方面，另一方面是学习。其实李润找过我很多次，混蛋嘴里说出的话也有对的。我当时以一个很高的分数考到实验班，又很快跑到了500名以外。其实我是不知道怎么学习的，我之前只是做题，根本没想过学习这种复杂的事。错题不改，也不复习，考成那样也是理所当然的。</p>
-                <p>后来渐渐的，我们似乎和成绩绑定了，我们被强行分裂成两部分，一个是课内的成绩，一个是课外资料。然而在师达任何的课余都被视为“罪”，成绩决定人品，成绩决定“社会地位”。成绩差的好像就是应该被看不起，扣分多的就是在给并不团结的团体抹黑。</p>
-                <p>我想如果我有北京户口，一直在那个学校坚持到了初三中考，且不说我的成绩，可能我的内心会留下很深的伤疤吧。</p>
-                <p>到了初二不出意外的在开学前得到了七班班主任的电话，我其实还挺高兴的，因为我小学的一个好朋友就在七班，我们前两天还刚见过面。七班整体氛围挺好，男生之间也很融洽，我交到了非常好的朋友，成绩有了进步，虽然并不亮闪闪，但我知道正在缓慢的进步着。有一次考到了三百多名，我很开心。班主任对我耐心多了，也许是因为周边的同学跟我差不多，也许是因为她默认我就是这样一个人。</p>
-                <p>但是，我很不能理解的一件事是她在我要走前两三个月搞了一个排名，大体上就是投票出班里最闹腾的几个同学，并把他们安排到角落里去。还没开始投票我就知道这把稳了，可能是我在师达排名最高的一次。结果不出所料，我被封印在了教室的右后角。</p>
-                <p>向左转头能看见窗户，看见窗户就想起你一直坐的那个角落。白天能看见青葱的绿托住蓝色的天，下午能看见十万只金喇叭冲破云霄齐齐响起，晚上能看见宁静的黑被灯烫出几个白色的斑点。你总是选后排靠窗的位置（王的故乡），还说要写一篇作文叫“三年的角落”。这篇文章，我不知道你写成没有。</p>
-                <p>我还记得西操场的晚霞。太阳鼓足力气试图向穹顶爬去，另一个看不见的巨人在地平线以下死死的拖住太阳的双腿，两个人在天边开始搏斗，动脉喷涌出鲜红的血液染红了云彩，由此便成了夕烧。天上的风吹动地上的沙，太阳的尸体慢慢的冷下去，天边一片寂静，我坐在主席台上，一个人看着天边一切的杀戮和新生，直到夜色来跟我换班。那时，我看见你在踢足球。</p>
+                <p>你是音乐课代表，唱歌好听，画画也厉害，还会写书法。当时的我还是太年轻了，跟你在一块居然没有自卑，觉得“哇，这个人好厉害，怎么什么都会？”可能这就是你亲和力的体现。还记得在初一一开学的那次运动会上我们坐在一起，聊了很多事，但已经全都忘记了。师达的运动会又臭又长是真的，但没有哪个学校比它更重视体育也是真的。还记得看你站起身，说要去参加项目的背影。敢去做我当时最害怕的事，我还是很佩服你的。那天天蓝得不真切，风吹过灌木丛的沙沙声和学生们窃窃私语的声音构成了那天的底噪。就在一片欢呼声和混乱中，运动会结束了。</p>
+                <p>如你所见，我的体育在当时很糟糕，跑一圈之后就累得不行了，在别人一千米成绩飞速进步的时候我却还在七分钟左右徘徊；当别人能拉起四五个引体的时候我连杆子都挂不住……这不由得使我讨厌体育课，而在一个体育课如此之多的学校里，每天都有些烦躁。</p>
+                <p>当然，体育是一方面，另一方面是学习。李润找过我很多次，我当时以一个很高的分数考到实验班，又很快跑到了500名以外，他并不是很满意。现在想想，当时其实我是不知道怎么学习的，之前只是做题，根本没想过学习这种复杂的事。错题不改，也不复习，考成那样也是理所当然的。</p>
+                <p>后来渐渐的，我们似乎和成绩绑定了，被强行分裂成两部分，一个是课内的成绩，一个是课余生活。然而在师达任何的课余都被视为“罪”，成绩决定人，决定“社会地位”。成绩差的好像就是应该被看不起，扣分多的就是在给并不团结的团体抹黑。</p>
+                <p>我想，如果我在那个学校呆了三年，可能我的内心会留下很深的伤疤吧。或许在那里心里单纯的人更难受到伤害，但一旦受到伤害，造成的后果也更严重。我作为一个纯正乐天派，其实初一初二的时候没有感到生活有多压抑，遇见什么事让自己笑笑就过去了，难过就去一个人哭一会。现在我才意识到那其实就是在一个重视成绩的群体里被渐渐边缘化的情况。你也一样，心思太过单纯，结果被别人利用，付出了惨痛的代价。</p>
+                <p>到了初二，不出意外的在开学前得到了七班班主任的电话，我其实还挺高兴的，因为小学的一个好朋友就在七班。我们前两天还刚见过面。七班整体氛围挺好，男生之间也很融洽，我交到了更多朋友，成绩有了进步，虽然并不亮闪闪，但我知道正在缓慢的进步着。有一次考到了三百多名，我很开心，但是还是不够和你坐到一个考场去。班主任对我耐心多了，也许是因为周边的同学跟我差不多，也许是因为她默认我就是这样一个人。</p>
+                <p>但是，我很不能理解的一件事是她在我要走前两三个月搞了一个排名，大体上就是投票出班里最闹腾的几个同学，并把他们安排到角落里去。还没开始投票我就知道这次可能是我在师达排名最高的一次。结果不出所料，我被封印在了教室的右后角。</p>
+                <p>向左转头能看见窗户。白天能看见青葱的绿托住蓝色的天，下午能看见十万只金喇叭冲破云霄齐齐响起，晚上能看见宁静的黑被灯烫出几个白色的斑点。看见窗户就想起你一直坐的那个角落，你总是选后排靠窗的位置（王的故乡），还说要写一篇作文叫“三年的角落”。这个目标，不知道你还记得吗。</p>
+                <p>我还记得西操场的晚霞。太阳鼓足力气试图向穹顶爬去，另一个看不见的阴翳在躲在地平线以下死死地拖住太阳的双腿，两个人在天边开始搏斗，动脉喷涌出鲜红的血液染红了云彩，由此便成了夕烧。天上的风吹动地上的沙，太阳的尸体慢慢的冷下去，天边一片寂静，我坐在主席台上，一个人看着天边一切的杀戮和新生，直到夜色来跟我换班。那时，我看见你在踢足球。</p>
                 <p>你是我少见的爱运动的女生，上了高中和大学以后身边的同学都非常懒，更别提和男生踢球了。每当看见你们在球场上驰骋，我就会想起那个夏天的下午，我穿着球衣坐在椅子上，直到结束也没有人喊我来换班。后来才知道李润早就说了不让我上。</p>
-                <p>唉，又是被做局的一天。</p>
-                <p>除此之外，我想加入轮滑社也被他直接驳回，反倒成了每天坚持擦黑板的人，当然擦不好还有惩罚。</p>
-                <p>下面我给你讲我那天晚上和你分别之后发生了什么。</p>
-                <p>我抱着被褥回到七班，收拾好了寝室的所有小物件，突然想起了半年前初一暑假前的最后一天。期末考试已经过去，广播里正在播放处分决定，几个男生被李润提溜在后面站着，我抱着枕头，脚底放着被褥，不知道自己该去哪，会离开吗？我也说不清楚，但是又不是不舍，回顾初一，跟我挺聊得来的人除了你之外并不多了。我就这样拎着行李，回家了。</p>
+                <p>除此之外，我想加入轮滑社的申请也被他直接驳回，但我成了每天坚持擦黑板的人，当然擦不好还有惩罚。我想，或许一直恨他也没有用，于是我试图让风把我手里的怨恨像带走蒲公英种子那样带走。</p>
+                <p>最后一晚，我抱着被褥回到七班，收拾好了寝室的所有小物件，突然想起了初一暑假前的最后一天。期末考试已经过去，广播里正在播放处分决定，几个男生被李润提溜在后面站着，我抱着枕头，脚底放着被褥，不知道自己该去哪，会离开吗？我也说不清楚，但是又不是不舍，跟我挺聊得来的人除了你之外并不多了。我就这样拎着行李，回家了。</p>
                 <p>那天晚上也一样，很巧的是我遇到了一个一班的同学，他拿了出门条要出门。我不记得我有回头再看吗？总之是骑车离开了学校，就和之前一样。</p>
                 <p>我留了几封信在一些同学的桌洞里，应该也给你留了，本来想再叫你出来好好告个别的，最后也没有时间。一个假期过去，疫情的到来让我既不能转去天津，也不能不上师达的课，所以网课期间我又秽土转生回来加入七班的网课了。这种虚拟的链接并不长，很快就到了天津线下办手续，入学的时候。</p>
-                <p>去的是南开区一个相当新的学校，新到我是那个学校的第一届毕业生。老师是其他学校淘汰下来重组的老师，并不是说他们人不行，只是说教育条件和北京还是差远了。同学抽烟喝酒谈恋爱啥都有，上课出现了很多在师达没见过的抽象操作。打游戏是最常见的，没有满教室疯跑就不错了。</p>
-                <p>在这样一个男生都是混混，女生都是太妹的环境里，我“善良”的外衣似乎被证明只是胆小。害怕老师，害怕找事的同学，害怕在师达的害怕，但是我的成绩却一下子名列前茅，第一次考试就直冲第一考场的第二排了，我的自信心似乎恢复了一点。</p>
-                <p>教育，尤其是青少年早期的教育对一个人性格塑造真的很重要，我说的并不是语数英这种学术上的教育，我说的是教做人。我明白师达很努力的想要做到这一点，可是它过于看重成绩而忽视了老师本身的人品。在学生面前破防发飙，骂学生和家长，无条件的支持学习更好的一方，甚至出手打人。这都不应当是一个老师的所作所为，即便他评的职称很闪亮。</p>
-                <p>我到了天津才明白差的学校是什么样，学生们在早期根本就没有被灌输规矩这个概念，课堂混乱不堪，在黑社会和街溜子党中选择了精神小伙，四处寻衅滋事却又没有能摆平的能力，让他学习又觉得学习不如早点混有出路。其实现在看来还是很吓人的，15岁的孩子放弃了自己的人生。</p>
-                <p>不过从某种意义上来讲，这种环境也给了我改变性格的刺激。初三的某一天，隔壁班大姐早上来坐在我位子上跟别人谈天说地，忘了中途的过程，后来她扬言要找人打我。其实当时听见这个心里没什么感觉，但是周围的同学告诉我她是真来，过了一会他就叫了两个瘦高的男生在外面等我，由于我当时已经是班里的第一名了，老师就出去帮我解决这个事。</p>
-                <p>那一上午我都没有集中注意力，心里感情很复杂。我为自己的窝囊感到可悲，又为被别人看不起而感到愤怒。在师达给自己情绪穿上的束缚衣似乎已经被我撑裂了，只需要我轻轻撕开……</p>
-                <p>先是经历了愤怒，又是悲伤，回到家，我拿起手机，做了一个影响我至今的决定：我买了一把匕首，刃长13公分，廉价的仿制品，放到现在我肯定不会买这种便宜货，但在当时，我好像明白我心中缺的是什么了，是安全感。我担心被李润叫去莫名其妙骂一顿，担心有点“权力“的学生会在半道上对一件小事的存心刁难，担心某天突然闯入师达碟中谍的镜头，担心李润不断对我暗示要给我一个处分。我已经担心了太久，我好累啊。内向的安全寻求不到，我就寻求外向的，其实从一开始就有兆头了不是吗？我喜欢跟别人在操场上摔来摔去，尽管总是我被摔，可能是我寻求自保的一种潜意识吧。</p>
-                <p>后面她确实没有找人打我，老师还是把这个是很好地解决了。匕首就静静躺在书包的夹层里，从来不拿出来，只有背上书包感受到刀格抵住后背，才有了一丝安全感。</p>
-                <p>慢慢的，我心里压抑的那部分放出来时间太久了，已经回不去了，但当时我觉得挺好，已经不需要再胆小了。我努力锻炼身体，每天都跑步，举哑铃，一方面是为了和一个朋友决出高下，另一方面我好像从坚持一件痛苦的事中找到了一丝意义。我的身体越来越强，体考满分已经是轻轻松松的事情。我打架，继续收集各种兵器，有短棍，指虎，还有更多的刀，长的，短的，锯齿切割，血槽放血，拿去学校给大家展示。还有打群架，单挑打架，但我还是从来不欺负人，成绩也进步到了年级前五的位置。</p>
-                <p>在初三那一年，我感到我的气质发生了很大的变化，可悲的是，这种剧烈的人格变化还是来自学习成绩的变化。成也学业，败也学业，这或许就是中国应试教育体制下学生的悲哀。恭喜你，得以脱离这个泥潭。</p>
-                <p>在中式伤痛下交到的朋友往往也共享着升学焦虑，这或许是国际课程学生永远无法体验到的一种感觉。他们把我做成表情包，在每一次考试前转发我这个人形锦鲤，围着我的卷子叽叽喳喳，惊叹于我又做出一道他们不会的题。就这样，我从这所学校毕业了，整个人的精神状态像是一个学习很好的混混。</p>
-                <p>不出意外的被市重点录取了，开学我走进教室，坐在了后排一个男生的旁边，后来他成了我最好的朋友。军训的时候因为身高出众被选入国旗班……</p>
-                <p>我还在一班看见了孙博语，他看见我的时候好像有一种无奈又释怀的感觉，我还在十二班看见了我的一个小学同学。不管我们前半段人生曾经分开多么远，最终我们还是在这一点相聚了，或许这就是缘分。从我离开师达以后，好像没想到能和你再见面的。</p>
-                <p>重点高中生活算是比较丰富多彩的，我加入了短视频社团，系统地学习了怎么拍摄，交到了更多朋友，也似乎明白了之前自己的一些行为是不对的，充满戾气的我正在慢慢消融。</p>
-                <p>班上绝大多数男生组成了一个大团体，原来同学之间是可以这么和睦相处，原来老师并不会故意找你的茬，原来晚霞可以不是鲜血淋漓而是温柔告别。当晚风吹动逸夫楼顶的旗杆时，我听见大钟响了十三下。</p>
-                <p>高中梦也似的过去了，高考出分后，每个人都忙着填报志愿，我的成绩算是小有遗憾，来到了中国海洋大学。到了大学，感觉人与人之间的距离似乎变远了，再也没有高中时的感觉了。从一开始的孤独到慢慢适应这种感觉，我的大学生活过的可能有些无聊。因为目标是争取一个保研名额，所以每一科都不能落下，要尽力做到最好。中国人的一生一直很“关键”——早教很关键，幼儿园很关键，幼升小，一年级，二年级，小升初，初一初二初三，高一打基础，高二提升，高三冲刺，高考后的暑假，大一大二大三大四，考研考公，研一研二研三，就业或者读博，工作很关键，晋升，加班，应酬……我们好像被困在一个漩涡里，只能选择跟随潮流或者加速坠落，没有阶级跃迁的可能。</p>
-                <p>但是，王舒歆，你不一样。我虽然不知道外国的生活工作模式是怎么样，但我相信不会是国内这种内卷沼泽——越挣扎，陷得越深，没有出路。我不知道动漫里描写的日本高中生生活是不是真的，因为我从来没去过。要么是来自于现实的刻画，要么是现实和动漫的美好形成了极度反差。</p>
-                <p>我突然想到一颗属于我的树。在我小的时候这棵树是我唯一能爬上去的树，我每天都要去看看它，随着转学去海淀区，我就离开它了，这一分别就是13年。如今，我再见它，也爬不上去了。附近的街道全变了，之前我家楼下是一条土路，小小的我午觉睡到下午两三点，阳光已经填满了阳台，正向我的床慢慢走来，窗外邻居的空调外机嗡嗡作响，听见楼下传来几个学生的嬉笑怒骂声。走出卧室，客厅里每处都闪耀着金色的光辉，太阳斜射在电视机上，还有半个小时就要播我喜欢的动画片。远处山上有一个城堡似的建筑，到现在还在那里矗立，我也不知道是干什么的。</p>
-                <p>你看，我讲了这么久，似乎全是关于我自己的故事。我也只能讲我自己的故事，你的故事要靠你自己去写。当你意识到，身边走过的每一个路人都有自己的漫长故事，你看世界的眼光会不会不太一样？</p>
-                <p>只可惜，话是永远说不尽的，你是我毕业之后见的第一个来自一班的同学，我也始终没有忘记你给我提的那些建议，其中专时专用真的有用。经过五年的成长，我在这里也给你一条建议：</p>
-                <p>尝试并坚持一项体育运动，最好是日常就能完成的，比如跑步。我的心态转变是从我坚持跑步之后开始的。有一个健壮的身体带给你的提升不只是增强自信。你将变得更有勇气，并且在一些极端情况下也不会慌张。</p>
+                <p>去的是南开区一个相当新的学校，我们是那所学校的第一届毕业生。老师是其他学校淘汰下来重组的老师，教育条件和北京比还是差远了。同学抽烟喝酒谈恋爱啥都有，还有很多很多在师达没见过的抽象操作。打游戏是最常见的，没有满教室疯跑就不错了。</p>
+                <p>男生都是混混，女生都是太妹，在这样一个环境里，每天面对各种挑衅和找茬，我“善良”的外衣似乎被证明只是胆小。虽然不太适应这种混乱的环境，但是我的成绩却一飞冲天——没有对比就没有伤害。</p>
+                <p>教育，尤其是青少年早期的教育对一个人性格塑造真的很重要，我说的并不是语数英这种学术上的教育，而是教做人。我明白师达很努力的想要做到这一点，可是它过于看重成绩，而忽视了老师本身的人品。在学生面前破防发飙，骂学生和家长，无条件的支持学习更好的一方，甚至出手打人——这都不应当是一个老师的所作所为，只要他还是一个老师。</p>
+                <p>我到了天津才明白差的学校是什么样，他们根本就没有规矩这个概念，弄的课堂混乱不堪。一群精神小伙整日在外面惹是生非，有几次惹到了真的道上的人又是一哭二闹三上吊的给人道歉。但是也并没有吸取任何教训，之后该啥样还啥样。细细想来是一种悲哀，教育的缺失让他们在十五岁决定放弃自己的人生而不自知，不过换句话说，如果没有他们的放弃，也没有我们现在的成绩，竞争将会更加激励，同时会拉低人均教育资源，社会就是这样残酷。</p>
+                <p>我性格的改变是在初三的某一天，隔壁班大姐早上来坐在我位子上跟别人谈天说地，我让她起来。忘了中途的过程，后来她扬言要找人打我。一开始我以为她又是跟其他人一样只有嘴厉害，可听着周围同学讲述她过往事迹，我的心里也逐渐升起了一阵烦躁。不多时，两个瘦高的身影就在门口出现了，让我出去，我自然是懒得搭理，班主任过来把他们两个叫走了，顺便帮我把这件事解决了。</p>
+                <p>那一上午我都没有集中注意力，心里感情很复杂。她私下还在跟我叫嚣，一方面，我害怕这种事，另一方面，对自己窝囊的悲叹正在一点点转化成愤怒。为什么我还要遇上这种事？</p>
+                <p>愤怒在心里越积越多，最后竟发展成了不可遏制的杀意。我买了一把匕首，廉价的仿制品，放到现在我肯定不会买这种便宜货，但在当时，我好像明白了我心中一直缺少的是安全感。在之前的日子里，我总会被李润叫去莫名其妙骂一顿，遇上学生会的“大官们”对一件小事的存心刁难，忍受住李润不断的暗示要给我一个处分。我之前好像忍耐过头了，当时的我只想把心中的怒火全撒在她一个人身上。</p>
+                <p>不过，后面她确实没有找人打我，老师还是把这个事很好地解决了。匕首就静静躺在书包的夹层里，从来不拿出来，只有背上书包感受到刀格抵住后背，才有了一丝安全感。</p>
+                <p>慢慢的，我的胆子变得越来越大，比起忍着或者吵架，遇到事情我更喜欢直接一拳打在对面鼻梁骨上，当时我觉得挺好，已经不需要再怕事了。我努力锻炼身体，每天都跑步，举哑铃，每天都和朋友在草地上摔跤。我加倍锻炼，不仅是为了能战胜他，也是追寻做一件痛苦的事情带给我的意义，就像当年我看你一样。在那所学校里，有时我会想起你，想起七班的同学，想起在银杏树下的那些日子，新的学校里，似乎也有一棵银杏树。 </p>
+                <p>在初三那一年，因为学习成绩的提升带给我的自信，我的人格也迎来剧变。从一个外向又有点自卑和胆小的人变成了乐观开朗又和暴力并存的人。成也学业，败也学业，这或许就是中国应试教育体制下学生的悲哀。那段时间和你突然断了联系，一看被你拉黑了，我小小的心灵里涌现了大大的疑问。恭喜你，得以脱离这个泥潭。</p>
+                <p>在中式伤痛下交到的朋友往往也共享着升学焦虑，这是国内学生独有的一种感受。每个人在自己的伤口上撒盐，放黄油和拍蒜迷迭香，小火煎至金黄，摆上餐桌以炫耀自己所遭受的伤痛是多么的大。他们把我做成表情包，在每一次考试前转发我这个“人形锦鲤”，围着我的卷子叽叽喳喳，惊叹于我又做出一道他们不会的题。就这样，我从这所学校毕业了，整个人的精神状态脱胎换骨。</p>
+                <p>不出意外的被市重点录取了，开学我走进教室，坐在了后排一个男生的旁边，后来他成了我最好的朋友。在一班看见了孙博语，他看见我的时候好像有一种无奈又释怀的感觉，还在十二班看见了我的一个小学同学，腼腆着接近不敢相认。不管我们前半段人生曾经分开多么远，最终我们还是在这一点相聚了，或许这就是缘分。从我离开师达以后，好像没想到有一天能和你再见面的。</p>
+                <p>有一天，刘博修发朋友圈提到了你，其实可以算一封表白信的。我也突然想起了你，于是问了他你的联系方式，他说没有，这时候我才意识到你可能是把账号注销了。不管出于什么原因吧，我管陈岱星要了你现在的这个号，你居然能认出我是谁，我还是很欣慰的。但是得知你的身体状况好像不是很乐观，又让我有些担心。</p>
+                <p>在高中，我认识了更多人，交到了更多朋友也学到了很多知识。初中时那个孩子一定想不到他以后的样子，我给过去的我留了一个秘密。</p>
+                <p>班上绝大多数男生组成了一个大团体，原来同学之间是可以这么和睦相处，原来老师并不会故意找你的茬，原来晚霞可以不是鲜血淋漓而是温柔告别。当晚风吹动逸夫楼顶的旗杆时，我听见大钟响了十三下。我学着收起那些刺，但并不把它们拔掉，而是藏在我的体内，随时可以重新伸出来。这，才是善良。</p>
+                <p>高中梦也似的过去了，高考出分后，每个人都忙着填报志愿，我的成绩算是小有遗憾，来到了中国海洋大学。到了大学，感觉人与人之间的距离似乎变远了，再也没有高中时的感觉了。因为目标是争取一个保研名额，我的大学生活过的可能有些无聊。每一科都不能落下，要尽力做到最好。</p>
+                <p>中国人的一生一直很“关键”——早教，幼儿园，幼升小，一年级，二年级，小升初，初中，高中，高考后的暑假，本科，研究生，就业或者读博，工作，晋升……我们的成长好像一个洋葱，一层层把自己包裹，等社会认可了你的成熟，你早就丢失了你的心。</p>
+                <p>但是，王舒歆，你有机会去打破这种定势。为什么不长成胡萝卜或者土豆呢？这就是通识教育可以带给你的选择。回顾过往，从小学没心没肺的年纪到现在似乎就是一瞬间。</p>
+                <p>我突然想到一颗属于我的树。宽大的树杈，低矮的枝桠使得它是我唯一能爬上去的树。随着转学去海淀区，我和它这一分别就是13年。如今，我再见它，也爬不上去了。高高的树干直插天空，风吹过树林，摇曳的树叶让我看不清上面的枝桠。会不会有一个年幼的我依旧坐在上面呢？我不知道，祝他安好吧。附近的街道全变了，之前我家楼下是一条土路，小小的我午觉睡到下午两三点，阳光已经填满了阳台，正向我的床慢慢走来。走出卧室，客厅里每处都闪耀着金色的光辉，太阳斜射在电视机上，还有半个小时就要播我喜欢的动画片。远处山上有一个城堡似的建筑，到现在还在那里矗立，我也不知道是干什么的。</p>
+                <p>我始终没有忘记你给我提的那些建议，其中专时专用真的有用。经过五年的成长，我在这里也给你一条建议：</p>
+                <p>尝试并坚持一项体育运动，最好是日常就能完成的，比如跑步。有一个健壮的身体带给你的提升不只是增强自信。你将变得更有勇气，并且在一些极端情况下也不会慌张。</p>
+                <p>现在是你的体力巅峰期，你以后再也不会比现在更有更多的活力和体能。我去跑步的时候经常能收到大爷们羡慕的眼光。我们好比朝阳，热烈无比，光芒四射，正在往山头上去呢。</p>
+                <p>但是，我们每时每刻都是朝阳，其实无时无刻不是落日。当太阳向山巅升起之时，亦是垂垂老矣落向谷底之日。我们总有一天要走到山顶的，万物皆有进程。</p>
+                <p>现在，似乎分别的进程要到来了，日暮即将降临了，夕阳把我们的残影越拉越长，只好在日落前告别了，总有没说出的话，会藏在这篇文章里。</p>
+                <p>王舒歆，我们的人生有可能从此以后再无交集，我只希望你不要忘了我。</p>
                 <p>王舒歆，我们的人生有可能从此以后再无交集，我只希望你不要忘了我。</p>
                 <p class="glow-text">祝你幸福。</p>
                 <p class="signature">李禹涵</p>
+                <p class="signature">一个初出茅庐，闯荡世界的毛头小子</p>
+                <p class="signature">于2025年8月20日，北京，中国</p>
             </div>
             <div id="homeLink" class="home-link">
                 <a href="index.html">返回首页</a>
@@ -436,14 +604,14 @@
     </div>
 
     <script>
-        // 播放队列（随机首曲，其余两首依次播放）
+        // 播放队列（随机首曲，其余两首依次播放，循环）
         let playlist = [];
         let currentTrack = 0;
 
         window.onload = function () {
             createStars(200);
             setupBackgroundFromSession();
-            setupPlaylist(); // 构建三首歌的顺序播放队列
+            setupPlaylist();
             startEntryAnimation();
             startMeteorShower();
         };
@@ -452,18 +620,68 @@
 
         function createStars(count) {
             document.querySelectorAll('.star').forEach(s => s.remove());
+
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            const sparkleRatio = isMobile ? 0.18 : 0.25; // 更少出现光束的星
             for (let i = 0; i < count; i++) {
-                const s = document.createElement('div'); s.className = 'star';
-                const x = Math.random() * 100, y = Math.random() * 100;
+                const s = document.createElement('div');
+                s.className = 'star';
+
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+
+                // 尺寸：少量更大的星
                 const isBig = Math.random() < 0.12;
                 const size = isBig ? Math.random() * 3 + 2 : Math.random() * 2 + 0.8;
-                const delay = Math.random() * 3, bright = 0.6 + Math.random() * 0.4;
+
+                // 更长、更分散的闪烁周期与延迟
+                const dur = 4.8 + Math.random() * 3.4; // 4.8s ~ 8.2s
+                const delay = Math.random() * 3.5;
+                const brightness = 0.6 + Math.random() * 0.35;
+
                 Object.assign(s.style, {
-                    left: `${x}vw`, top: `${y}vh`, width: `${size}px`, height: `${size}px`,
-                    animationDelay: `${delay}s`, opacity: bright
+                    left: `${x}vw`,
+                    top: `${y}vh`,
+                    width: `${size}px`,
+                    height: `${size}px`,
+                    opacity: brightness
                 });
+                s.style.setProperty('--size', `${size}px`);
+                s.style.setProperty('--delay', `${delay}s`);
+                s.style.setProperty('--dur', `${dur}s`);
+                s.style.setProperty('--spikeScale', isBig ? '1.25' : '1');
+
+                // 只有部分星添加光束效果
+                const isSpark = Math.random() < sparkleRatio;
+                if (isSpark) {
+                    s.classList.add('spark');
+
+                    // 初始化一次角度和是否显示十字
+                    randomizeSpike(s);
+
+                    // 每次 twinkle 动画结束，随机一个新方向和是否十字
+                    s.addEventListener('animationiteration', (ev) => {
+                        if (ev.animationName === 'twinkle') {
+                            randomizeSpike(s);
+                        }
+                    });
+                }
+
                 document.body.appendChild(s);
             }
+        }
+
+        // 为“会闪”的星随机一个方向；有时是单束，有时是不完美十字
+        function randomizeSpike(el) {
+            const angle = Math.floor(Math.random() * 360);      // 主方向
+            const cross = Math.random() < 0.55;                 // 55% 概率出现十字
+            const delta = (Math.random() * 20 - 10);            // 与直角的微偏差，更自然
+
+            el.style.setProperty('--rot', `${angle}deg`);
+            el.style.setProperty('--rot2', `${angle + 90 + delta}deg`);
+
+            if (cross) el.classList.add('cross');
+            else el.classList.remove('cross');
         }
 
         function setupBackgroundFromSession() {
@@ -476,7 +694,6 @@
             img.src = bg;
         }
 
-        // 三首歌顺序播放（随机起始，其余两首依次）
         function setupPlaylist() {
             const all = [
                 { src: 'assets/audio/nengbanibizuoxiarima.mp3', title: '能把你比作夏日吗' },
@@ -489,17 +706,16 @@
             loadAndPlayCurrent(true);
 
             const audio = document.getElementById('bgMusic');
-            // 进度条与时间
             wireProgressEvents(audio);
 
             // 循环播放：到最后一首后回到第一首
             audio.onended = () => {
                 currentTrack = (currentTrack + 1) % playlist.length;
-                loadAndPlayCurrent(false); // 不中断节奏，直接播下一首
+                loadAndPlayCurrent(false);
             };
 
-            // 自动播放策略兼容
             setupUserInteractionPlay();
+            setupFabToggle(); // 悬浮球展开/收起
         }
 
         function loadAndPlayCurrent(fadeIn) {
@@ -509,12 +725,10 @@
             const cur = document.getElementById('currentTime');
             const tot = document.getElementById('totalTime');
 
-            // 重置UI
             titleEl.textContent = playlist[currentTrack].title;
             prog.value = 0; prog.max = 0;
             cur.textContent = '00:00'; tot.textContent = '00:00';
 
-            // 重置音源
             while (audio.firstChild) audio.removeChild(audio.firstChild);
             const src = document.createElement('source');
             src.src = playlist[currentTrack].src; src.type = 'audio/mpeg';
@@ -527,7 +741,7 @@
             } else {
                 audio.play().then(() => {
                     document.getElementById('btnPlayPause').textContent = '暂停';
-                }).catch(() => {/* 等待用户交互 */ });
+                }).catch(() => { });
             }
         }
 
@@ -537,16 +751,16 @@
             const title = document.getElementById('letterTitle');
             const content = document.getElementById('letterContent');
             const homeLink = document.getElementById('homeLink');
-            const miniPlayer = document.getElementById('miniPlayer');
+            const fab = document.getElementById('playerFab');
 
             overlay.style.opacity = '1';
-
             setTimeout(() => {
                 overlay.style.opacity = '0';
                 setTimeout(() => container.classList.add('show'), 500);
                 setTimeout(() => title.classList.add('show'), 1200);
                 setTimeout(() => content.classList.add('show'), 1800);
-                setTimeout(() => { homeLink.classList.add('show'); miniPlayer.classList.add('show'); }, 2500);
+                // 展示悬浮球（默认球形）
+                setTimeout(() => { fab.classList.add('show'); }, 2200);
             }, 800);
         }
 
@@ -561,14 +775,13 @@
                     i++; if (i >= steps) { clearInterval(t); audio.volume = 0.6; return; }
                     audio.volume = i * step;
                 }, dt);
-            }).catch(() => {/* 等待用户交互 */ });
+            }).catch(() => { });
         }
 
         function setupUserInteractionPlay() {
             const a = document.getElementById('bgMusic');
             const btn = document.getElementById('btnPlayPause');
 
-            // 首次用户交互尝试播放
             ['click', 'touchstart', 'keydown'].forEach(ev => {
                 document.addEventListener(ev, () => {
                     if (a.paused || a.volume === 0) {
@@ -577,13 +790,10 @@
                 }, { once: true });
             });
 
-            // 上一曲（循环到末尾）
             document.getElementById('btnPrev').addEventListener('click', () => {
                 currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
                 loadAndPlayCurrent(true);
             });
-
-            // 播放/暂停
             btn.addEventListener('click', () => {
                 if (a.paused) {
                     if (a.volume === 0) fadeInMusic(800);
@@ -592,12 +802,26 @@
                     a.pause(); btn.textContent = '播放';
                 }
             });
-
-            // 下一曲（循环到开头）
             document.getElementById('btnNext').addEventListener('click', () => {
                 currentTrack = (currentTrack + 1) % playlist.length;
                 loadAndPlayCurrent(true);
             });
+        }
+
+        // 悬浮球展开/收起
+        function setupFabToggle() {
+            const body = document.body;
+            const fab = document.getElementById('playerFab');
+            const backdrop = document.getElementById('playerBackdrop');
+            const closeBtn = document.getElementById('btnClose');
+
+            function open() { body.classList.add('player-open'); }
+            function close() { body.classList.remove('player-open'); }
+
+            fab.addEventListener('click', open);
+            closeBtn.addEventListener('click', close);
+            backdrop.addEventListener('click', close);
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); }, false);
         }
 
         // 进度条与时间显示
@@ -615,7 +839,6 @@
                 if (!isNaN(audio.currentTime)) {
                     prog.value = audio.currentTime;
                     cur.textContent = formatTime(audio.currentTime);
-                    // 避免某些浏览器未触发 loadedmetadata 时总时长为 NaN
                     if (isFinite(audio.duration)) {
                         prog.max = audio.duration;
                         tot.textContent = formatTime(audio.duration);
@@ -623,7 +846,6 @@
                 }
             });
 
-            // 拖动快进/后退
             prog.addEventListener('input', () => {
                 if (isFinite(audio.duration)) {
                     audio.currentTime = parseFloat(prog.value);
@@ -639,8 +861,7 @@
             return `${m.toString().padStart(2, '0')}:${r.toString().padStart(2, '0')}`;
         }
 
-        // 改进流星：星头先出现，随后带出拖尾；全程匀速
-        // 消失：星头先渐隐，拖尾继续滑行一段，再慢慢淡出
+        // 改进流星：星头先出现，随后带出拖尾；全程匀速；尾部延迟淡出
         function spawnMeteor() {
             const m = document.createElement('div');
             m.className = 'meteor';
@@ -654,21 +875,19 @@
             m.appendChild(tail);
             m.appendChild(head);
 
-            // 参数
-            const angle = 18 + Math.random() * 20;         // 右下方向 18°~38°
-            const baseTravel = 220 + Math.random() * 520;   // 基础位移
-            const baseMs = 900 + Math.random() * 1100;      // 基础用时（保持匀速）
-            const tailBonus = 120 + Math.random() * 220;    // 拖尾额外滑行距离
-            const speed = baseTravel / baseMs;              // 匀速 px/ms
-            const totalTravel = baseTravel + tailBonus;     // 总位移（包含拖尾滑行）
-            const totalMs = totalTravel / speed;            // 总用时（匀速）
+            const angle = 18 + Math.random() * 20;
+            const baseTravel = 220 + Math.random() * 520;
+            const baseMs = 900 + Math.random() * 1100;
+            const tailBonus = 120 + Math.random() * 220;
+            const speed = baseTravel / baseMs;
+            const totalTravel = baseTravel + tailBonus;
+            const totalMs = totalTravel / speed;
 
-            const tailLength = 80 + Math.random() * 180; // 拖尾更短
+            const tailLength = 80 + Math.random() * 180;
             const thickness = Math.random() < 0.2 ? 3 : 2;
             tail.style.width = `${tailLength}px`;
             tail.style.height = `${thickness}px`;
 
-            // 起点
             const vw = window.innerWidth, vh = window.innerHeight;
             const startFromTop = Math.random() < 0.25;
             const startX = startFromTop ? (Math.random() * vw * 0.6) - vw * 0.1 : (-vw * 0.15 + Math.random() * vw * 0.25);
@@ -678,51 +897,44 @@
             const endX = startX + Math.cos(rad) * totalTravel;
             const endY = startY + Math.sin(rad) * totalTravel;
 
-            // 初始：就位但不可见，星头先出现
             m.style.transform = `translate3d(${startX}px, ${startY}px, 0) rotate(${angle}deg)`;
-            m.style.transition = `transform ${totalMs}ms linear`; // 匀速位移
+            m.style.transition = `transform ${totalMs}ms linear`;
             head.style.opacity = '0';
             tail.style.opacity = '0';
             tail.style.transform = `translateY(-50%) scaleX(0)`;
 
             document.body.appendChild(m);
 
-            // 下一帧开始：设置终点位移，启动匀速运动
             requestAnimationFrame(() => {
                 m.style.transform = `translate3d(${endX}px, ${endY}px, 0) rotate(${angle}deg)`;
             });
 
-            // 星头先淡入
-            const headInMs = 180 + Math.random() * 120; // 180~300ms
+            const headInMs = 180 + Math.random() * 120;
             head.style.transition = `opacity ${headInMs}ms ease-out`;
             requestAnimationFrame(() => { head.style.opacity = '1'; });
 
-            // 稍后带出拖尾（生长+淡入）
-            const tailGrowDelay = 120; // 星头出现后约0.12s开始带尾
-            const tailGrowMs = 260 + Math.random() * 240; // 260~500ms
+            const tailGrowDelay = 120;
+            const tailGrowMs = 260 + Math.random() * 240;
             setTimeout(() => {
                 tail.style.transition = `transform ${tailGrowMs}ms ease-out, opacity ${tailGrowMs}ms ease-out`;
                 tail.style.opacity = '1';
                 tail.style.transform = `translateY(-50%) scaleX(1)`;
             }, tailGrowDelay);
 
-            // 星头在基础位移末段先渐隐（仍保持匀速）
-            const headOutMs = 220 + Math.random() * 180; // 220~400ms
-            const headOutStart = baseMs - Math.min(headOutMs - 40, 360); // 在基础结束前开始淡出
+            const headOutMs = 220 + Math.random() * 180;
+            const headOutStart = baseMs - Math.min(headOutMs - 40, 360);
             setTimeout(() => {
                 head.style.transition = `opacity ${headOutMs}ms ease-out`;
                 head.style.opacity = '0';
             }, Math.max(0, headOutStart));
 
-            // 拖尾在总位移末段再慢慢隐去（依然匀速）
-            const tailOutMs = 400 + Math.random() * 400; // 400~800ms
+            const tailOutMs = 400 + Math.random() * 400;
             const tailOutStart = totalMs - tailOutMs;
             setTimeout(() => {
                 tail.style.transition = `opacity ${tailOutMs}ms ease-out`;
                 tail.style.opacity = '0';
             }, Math.max(0, tailOutStart));
 
-            // 清理
             setTimeout(() => { m.remove(); }, totalMs + 120);
         }
 
