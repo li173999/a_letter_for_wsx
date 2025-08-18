@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>给你的一封信</title>
+    <title>王舒歆 亲启</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500&display=swap');
 
@@ -217,23 +217,114 @@
             }
         }
 
+        /* ========== 星空（与 letter.html 同步） ========== */
         .star {
             position: fixed;
-            background-color: white;
+            left: 0;
+            top: 0;
+            width: var(--size, 2px);
+            height: var(--size, 2px);
+            background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.9) 38%, rgba(255,255,255,0.0) 70%);
             border-radius: 50%;
-            animation: twinkle 3s infinite;
-            z-index: 1;
+            z-index: 2;
             pointer-events: none;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 3px rgba(255,255,255,0.38));
+            animation: twinkle var(--dur, 6s) ease-in-out infinite;
+            animation-delay: var(--delay, 0s);
+            will-change: opacity, transform;
         }
 
-        @keyframes twinkle {
-            0%,100% {
-                opacity: .4
+            .star.spark::before,
+            .star.spark::after {
+                content: '';
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(0.15);
+                opacity: 0;
+                border-radius: 999px;
+                background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,0) 100%);
+                filter: drop-shadow(0 0 5px rgba(176,160,255,0.35));
+                will-change: transform, opacity;
+                animation: spikeTwinkle var(--dur, 6s) ease-in-out infinite;
+                animation-delay: var(--delay, 0s);
+            }
+
+            .star.spark::before {
+                width: calc(var(--size, 2px) * 7.5 * var(--spikeScale, 1));
+                height: clamp(0.6px, calc(var(--size, 2px) * 0.42), 1.2px);
+            }
+
+            .star.spark.cross::after {
+                --rot: var(--rot2, 90deg);
+                width: calc(var(--size, 2px) * 7.5 * var(--spikeScale, 1));
+                height: clamp(0.6px, calc(var(--size, 2px) * 0.42), 1.2px);
+            }
+
+            .star.spark:not(.cross)::after {
+                display: none;
+            }
+
+        @keyframes spikeTwinkle {
+            0%, 35%, 65%, 100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(0.15);
             }
 
             50% {
-                opacity: 1
+                opacity: 1;
+                transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(1);
             }
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.42;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* ========== 流星（与 letter.html 同步） ========== */
+        .meteor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 3;
+            will-change: transform;
+            pointer-events: none;
+        }
+
+        .meteor-tail {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            height: 2px;
+            width: 200px;
+            transform: translateY(-50%) scaleX(0);
+            transform-origin: right center;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 75%, rgba(255,255,255,1) 100%);
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.6);
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+
+        .meteor-head {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            background: white;
+            box-shadow: 0 0 8px #fff, 0 0 16px #fff, 0 0 24px rgba(176,160,255,0.75);
+            opacity: 0;
+            will-change: opacity;
         }
 
         .fade-in-element {
@@ -292,7 +383,8 @@
 
         window.onload = function () {
             console.log("页面加载完成，开始初始化...");
-            createStars(100);
+            createStars(200);              // 与 letter 保持一致
+            startMeteorShower();           // 开启流星雨
 
             const backgrounds = ['assets/images/bg1.jpg', 'assets/images/bg2.jpg'];
             currentBackground = backgrounds[Math.floor(Math.random() * backgrounds.length)];
@@ -318,6 +410,9 @@
             sessionStorage.setItem('currentMusic', currentMusicPath);
 
             startIntroOverlay(); // 开场提示仅此一次
+
+            // 窗口大小变化时重建星空
+            window.addEventListener('resize', () => createStars(200));
         };
 
         // 开场提示只在进入首页时显示
@@ -333,18 +428,59 @@
             }, 4000);
         }
 
+        // 与 letter.html 同步：更长周期、少量星才带光束、随机方向/是否十字
         function createStars(count) {
+            document.querySelectorAll('.star').forEach(s => s.remove());
+
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            const sparkleRatio = isMobile ? 0.18 : 0.25;
             for (let i = 0; i < count; i++) {
-                const star = document.createElement('div');
-                star.classList.add('star');
-                const x = Math.random() * 100, y = Math.random() * 100;
-                const size = Math.random() < 0.9 ? Math.random() * 2 + 1 : Math.random() * 3 + 2;
-                const delay = Math.random() * 3, brightness = 0.7 + Math.random() * 0.3;
-                star.style.left = `${x}vw`; star.style.top = `${y}vh`;
-                star.style.width = `${size}px`; star.style.height = `${size}px`;
-                star.style.animationDelay = `${delay}s`; star.style.opacity = brightness;
-                document.body.appendChild(star);
+                const s = document.createElement('div');
+                s.className = 'star';
+
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+
+                const isBig = Math.random() < 0.12;
+                const size = isBig ? Math.random() * 3 + 2 : Math.random() * 2 + 0.8;
+
+                const dur = 4.8 + Math.random() * 3.4; // 4.8~8.2s
+                const delay = Math.random() * 3.5;
+                const brightness = 0.6 + Math.random() * 0.35;
+
+                Object.assign(s.style, {
+                    left: `${x}vw`,
+                    top: `${y}vh`,
+                    width: `${size}px`,
+                    height: `${size}px`,
+                    opacity: brightness
+                });
+                s.style.setProperty('--size', `${size}px`);
+                s.style.setProperty('--delay', `${delay}s`);
+                s.style.setProperty('--dur', `${dur}s`);
+                s.style.setProperty('--spikeScale', isBig ? '1.25' : '1');
+
+                const isSpark = Math.random() < sparkleRatio;
+                if (isSpark) {
+                    s.classList.add('spark');
+                    randomizeSpike(s);
+                    s.addEventListener('animationiteration', (ev) => {
+                        if (ev.animationName === 'twinkle') randomizeSpike(s);
+                    });
+                }
+
+                document.body.appendChild(s);
             }
+        }
+
+        // 为“会闪”的星随机方向与是否十字
+        function randomizeSpike(el) {
+            const angle = Math.floor(Math.random() * 360);
+            const cross = Math.random() < 0.55;
+            const delta = (Math.random() * 20 - 10);
+            el.style.setProperty('--rot', `${angle}deg`);
+            el.style.setProperty('--rot2', `${angle + 90 + delta}deg`);
+            if (cross) el.classList.add('cross'); else el.classList.remove('cross');
         }
 
         function setupMusic() {
@@ -404,6 +540,9 @@
             form.style.opacity = 0; form.style.transform = 'translateY(20px)';
             document.getElementById('musicControl').style.opacity = 0;
 
+            // 关键：标记本次会话已从首页进入
+            sessionStorage.setItem('unlocked', '1');
+
             const transitionDuration = 3000;
             const musicFadePromise = new Promise(resolve => fadeOutMusic(transitionDuration, resolve));
             const pageFadePromise = new Promise(resolve => fadeToWhite(transitionDuration, resolve));
@@ -439,6 +578,90 @@
         document.getElementById("passwordInput").addEventListener("keyup", function (event) {
             if (event.key === "Enter") checkPassword();
         });
+
+        /* ========== 流星（与 letter.html 同步） ========== */
+        function spawnMeteor() {
+            const m = document.createElement('div');
+            m.className = 'meteor';
+
+            const tail = document.createElement('div'); tail.className = 'meteor-tail';
+            const head = document.createElement('div'); head.className = 'meteor-head';
+            m.appendChild(tail); m.appendChild(head);
+
+            const angle = 18 + Math.random() * 20;
+            const baseTravel = 220 + Math.random() * 520;
+            const baseMs = 900 + Math.random() * 1100;
+            const tailBonus = 120 + Math.random() * 220;
+            const speed = baseTravel / baseMs;
+            const totalTravel = baseTravel + tailBonus;
+            const totalMs = totalTravel / speed;
+
+            const tailLength = 80 + Math.random() * 180;
+            const thickness = Math.random() < 0.2 ? 3 : 2;
+            tail.style.width = `${tailLength}px`;
+            tail.style.height = `${thickness}px`;
+
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const startFromTop = Math.random() < 0.25;
+            const startX = startFromTop ? (Math.random() * vw * 0.6) - vw * 0.1 : (-vw * 0.15 + Math.random() * vw * 0.25);
+            const startY = startFromTop ? (-vh * 0.15) : (Math.random() * vh * 0.55);
+
+            const rad = angle * Math.PI / 180;
+            const endX = startX + Math.cos(rad) * totalTravel;
+            const endY = startY + Math.sin(rad) * totalTravel;
+
+            m.style.transform = `translate3d(${startX}px, ${startY}px, 0) rotate(${angle}deg)`;
+            m.style.transition = `transform ${totalMs}ms linear`;
+            head.style.opacity = '0';
+            tail.style.opacity = '0';
+            tail.style.transform = `translateY(-50%) scaleX(0)`;
+
+            document.body.appendChild(m);
+
+            requestAnimationFrame(() => {
+                m.style.transform = `translate3d(${endX}px, ${endY}px, 0) rotate(${angle}deg)`;
+            });
+
+            const headInMs = 180 + Math.random() * 120;
+            head.style.transition = `opacity ${headInMs}ms ease-out`;
+            requestAnimationFrame(() => { head.style.opacity = '1'; });
+
+            const tailGrowDelay = 120;
+            const tailGrowMs = 260 + Math.random() * 240;
+            setTimeout(() => {
+                tail.style.transition = `transform ${tailGrowMs}ms ease-out, opacity ${tailGrowMs}ms ease-out`;
+                tail.style.opacity = '1';
+                tail.style.transform = `translateY(-50%) scaleX(1)`;
+            }, tailGrowDelay);
+
+            const headOutMs = 220 + Math.random() * 180;
+            const headOutStart = baseMs - Math.min(headOutMs - 40, 360);
+            setTimeout(() => {
+                head.style.transition = `opacity ${headOutMs}ms ease-out`;
+                head.style.opacity = '0';
+            }, Math.max(0, headOutStart));
+
+            const tailOutMs = 400 + Math.random() * 400;
+            const tailOutStart = totalMs - tailOutMs;
+            setTimeout(() => {
+                tail.style.transition = `opacity ${tailOutMs}ms ease-out`;
+                tail.style.opacity = '0';
+            }, Math.max(0, tailOutStart));
+
+            setTimeout(() => { m.remove(); }, totalMs + 120);
+        }
+
+        function startMeteorShower() {
+            function next() {
+                const gap = 700 + Math.random() * 2600;
+                setTimeout(() => {
+                    spawnMeteor();
+                    if (Math.random() < 0.2) setTimeout(spawnMeteor, 120 + Math.random() * 260);
+                    next();
+                }, gap);
+            }
+            next();
+        }
     </script>
 </body>
 </html>

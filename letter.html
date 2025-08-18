@@ -467,6 +467,33 @@
             font-weight: 400;
         }
 
+        /* 「祝你幸福」图片样式：适配深色星空 */
+        .bless {
+            text-align: center;
+            margin: 26px 0 14px;
+        }
+
+            .bless img {
+                display: inline-block;
+                max-width: min(68%, 520px);
+                height: auto;
+                /* 关键1：反相成白字；2：混合为 Screen，黑色背景变“透明”，仅保留白字 */
+                filter: invert(1) brightness(1.28) contrast(1.08) drop-shadow(0 0 8px rgba(176,160,255,0.35)) drop-shadow(0 0 18px rgba(176,160,255,0.22));
+                mix-blend-mode: screen;
+                opacity: .96;
+            }
+                /* 如果换成“透明底的白字 PNG/SVG”，加 is-transparent 类来关闭反相 */
+                .bless img.is-transparent {
+                    filter: brightness(1.05) drop-shadow(0 0 8px rgba(176,160,255,0.35)) drop-shadow(0 0 18px rgba(176,160,255,0.22));
+                    mix-blend-mode: screen;
+                }
+
+        @media (max-width: 768px) {
+            .bless img {
+                max-width: 78%;
+            }
+        }
+
         @media (max-width: 768px) {
             .letter-container {
                 margin-top: 40px;
@@ -508,7 +535,45 @@
             max-width: 300px;
             display: none;
         }
+
+        /* 签名视频：靠右 + 初始隐藏 + 淡入过渡 */
+        .sig-video {
+            display: block;
+        }
+
+        .sig-right {
+            margin-left: auto;
+        }
+        /* 让块级视频贴右对齐 */
+        .sig-hidden {
+            opacity: 0;
+            transform: translateY(8px) scale(0.98);
+            pointer-events: none;
+            transition: opacity .6s ease, transform .6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .sig-show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
     </style>
+
+    <!-- 直开拦截：若非从首页进入且无会话标记，则跳回 index.html -->
+    <script>
+        (function () {
+            try {
+                const fromSameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;
+                const unlocked = sessionStorage.getItem('unlocked') === '1';
+                if (!fromSameOrigin && !unlocked) {
+                    location.replace('index.html');
+                }
+            } catch {
+                location.replace('index.html');
+            }
+        })();
+    </script>
 </head>
 <body>
     <div id="bgLayer" class="bg-layer"></div>
@@ -549,6 +614,7 @@
         <div id="letterContainer" class="letter-container">
             <h1 id="letterTitle">致王舒歆</h1>
             <div id="letterContent" class="letter-content">
+                <!-- 省略：正文保持不变 -->
                 <p>我依旧清晰地记得初次产生交集的场景。</p>
                 <p>那次换座位，我又被排到最后一个，只剩下你前面和讲台上两个选择，于我而言，在小学期间已经坐够讲台了，所以我就挑了你前面的那个位置。</p>
                 <p>说实话，其实当时我并不太清楚你是谁，甚至到了你前面才把你的脸和你的名字联系起来。你学习挺好——尽管你自己不这么说，但在我眼里，你的成绩已经是我梦寐以求的了。而且你的性格也很好，和我一样带着一点天然呆和幼稚，还是一个乐天派，显得跟他们有些不一样。</p>
@@ -591,11 +657,14 @@
                 <p>但是，我们每时每刻都是朝阳，其实无时无刻不是落日。当太阳向山巅升起之时，亦是垂垂老矣落向谷底之日。我们总有一天要走到山顶的，万物皆有进程。</p>
                 <p>现在，似乎分别的进程要到来了，日暮即将降临了，夕阳把我们的残影越拉越长，只好在日落前告别了，总有没说出的话，会藏在这篇文章里。</p>
                 <p>王舒歆，我们的人生有可能从此以后再无交集，我只希望你不要忘了我。</p>
-                <p>王舒歆，我们的人生有可能从此以后再无交集，我只希望你不要忘了我。</p>
-                <p class="glow-text">祝你幸福。</p>
-                <p class="signature">李禹涵</p>
-                <p class="signature">一个初出茅庐，闯荡世界的毛头小子</p>
+                <div class="bless">
+                    <img class="is-transparent" src="assets/images/bless.png" alt="祝你幸福">
+                </div>
                 <p class="signature">于2025年8月20日，北京，中国</p>
+                <video id="sigVideo" class="sig-video sig-right sig-hidden" playsinline muted preload="auto"
+                       style="width:min(68%,520px);mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(176,160,255,.35)) drop-shadow(0 0 18px rgba(176,160,255,.22));">
+                    <source src="assets/anim/signature_dark_gold.webm" type="video/webm">
+                </video>
             </div>
             <div id="homeLink" class="home-link">
                 <a href="index.html">返回首页</a>
@@ -608,13 +677,70 @@
         let playlist = [];
         let currentTrack = 0;
 
-        window.onload = function () {
-            createStars(200);
-            setupBackgroundFromSession();
-            setupPlaylist();
-            startEntryAnimation();
-            startMeteorShower();
-        };
+        // 改为 DOMContentLoaded；用 try/finally 确保遮罩一定会被移除
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                createStars(200);
+                setupBackgroundFromSession();
+                setupPlaylist();
+                startMeteorShower();
+                setupSignatureVideoGate(); // 底部触发签名视频播放
+            } catch (e) {
+                console && console.error && console.error(e);
+            } finally {
+                startEntryAnimation();
+                // 兜底：若出现异常，最多 5s 后强制移除白色遮罩
+                setTimeout(() => {
+                    const overlay = document.getElementById('whiteOverlay');
+                    if (overlay) overlay.style.opacity = '0';
+                }, 5000);
+            }
+        });
+
+        // 滑到底部 → 延迟2秒 → 淡入并播放签名视频（含自动播放拦截兜底）
+        function setupSignatureVideoGate() {
+            const v = document.getElementById('sigVideo');
+            if (!v) return;
+
+            try { v.pause(); } catch { }
+            v.currentTime = 0;
+
+            const threshold = 16; // 距底部阈值(px)
+            let scheduled = false; // 只触发一次
+
+            const startWithDelay = () => {
+                if (scheduled) return;
+                scheduled = true;
+                window.removeEventListener('scroll', onScroll);
+
+                setTimeout(() => {
+                    v.classList.remove('sig-hidden');
+                    v.classList.add('sig-show');
+
+                    v.play().catch(() => {
+                        // 若被策略拦截，监听首次交互补播
+                        const once = () => {
+                            v.play().catch(() => { });
+                            ['click', 'touchstart', 'keydown'].forEach(ev => document.removeEventListener(ev, once));
+                        };
+                        ['click', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, once, { once: true }));
+                    });
+                }, 2000); // 延迟2秒
+            };
+
+            const onScroll = () => {
+                const doc = document.documentElement;
+                const scrollTop = window.pageYOffset || doc.scrollTop || 0;
+                const viewport = window.innerHeight || doc.clientHeight || 0;
+                const scrollBottom = scrollTop + viewport;
+                const docHeight = Math.max(doc.scrollHeight, doc.offsetHeight, doc.clientHeight);
+                if (scrollBottom >= docHeight - threshold) startWithDelay();
+            };
+
+            window.addEventListener('scroll', onScroll, { passive: true });
+            // 若页面很短初始即在底部，稍后尝试一次
+            setTimeout(onScroll, 80);
+        }
 
         function logDebug(msg) { const d = document.getElementById('debugInfo'); if (d.style.display === 'block') d.innerHTML += '<br>' + msg; }
 
