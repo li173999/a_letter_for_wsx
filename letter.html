@@ -822,20 +822,26 @@
         }
 
         function setupPlaylist() {
+            // 全部曲目
             const all = [
                 { src: 'assets/audio/nengbanibizuoxiarima.mp3', title: '能把你比作夏日吗' },
                 { src: 'assets/audio/xiexie.mp3', title: '谢谢' },
                 { src: 'assets/audio/yuhuating.mp3', title: '雨花亭' }
             ];
-            const first = Math.floor(Math.random() * all.length);
-            playlist = [all[first], ...all.filter((_, i) => i !== first)];
+
+            // 首曲固定为“能把你比作夏日吗”
+            const first = all.find(t => t.src.includes('nengbanibizuoxiarima.mp3'));
+            // 其余两首随机排列
+            const rest = all.filter(t => t !== first).sort(() => Math.random() - 0.5);
+
+            playlist = [first, ...rest];
             currentTrack = 0;
             loadAndPlayCurrent(true);
 
             const audio = document.getElementById('bgMusic');
             wireProgressEvents(audio);
 
-            // 循环播放：到最后一首后回到第一首
+            // 循环播放
             audio.onended = () => {
                 currentTrack = (currentTrack + 1) % playlist.length;
                 loadAndPlayCurrent(false);
